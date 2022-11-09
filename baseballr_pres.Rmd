@@ -1,0 +1,96 @@
+---
+title: "baseballr Presentation"
+author: "Ian Curtis"
+date: "2022-11-06"
+output: pdf_document
+---
+
+# Load Packages
+
+I first load the necessary packages.
+
+```{r load_packages, message = FALSE}
+library(baseballr)
+library(tidyverse)
+```
+
+# Introduction
+
+`baseballr` is a package used to collect data on various baseball (MLB) statistics from multiple sources on the internet. It can also provide some interesting data on pre-selected trends and certain calculations.
+
+As of October 2022, `baseballr` is capable of fetching data from the following sources:
+
+* The MLB API
+* The MLB Statcast database (Baseball Savant)
+* Retrosheet
+* NCAA
+* Baseball Reference
+* FanGraphs
+
+This package is incredibly useful for searching for MLB data, especially when dataset joining is needed (such as combining statistics from Baseball Reference and FanGraph, for instance).
+
+# Demonstration
+
+Below are a few ways in which the `baseballr` package might be used to grab data.
+
+## Statcast (Baseball Savant)
+
+The [Savant database](https://baseballsavant.mlb.com/) is a large, searchable repository of MLB data extending back to 2008. The database can be searched on the web and contains a large number of custom filters to apply. The database will automatically create aggregate summaries according to selections, but the raw data is pitch-by-pitch and gives the researcher much freedom when using the data.
+
+The package here will grab raw data based on the query which can either specify a specific batter or pitcher or request all of the raw data between a certain time frame.
+
+```{r load_scherzer_data, message=FALSE}
+# Search for all data for Max Scherzer in June 2021
+
+scherzer <- statcast_search_pitchers(
+  start_date = '2021-06-01', 
+  end_date = '2021-06-30', 
+  pitcherid = 453286)
+head(scherzer)
+```
+
+The above chunk searches for all of the pitch-by-pitch data for Max Scherzer in June 2021. The result is a large data frame containing attributes that can be pulled out for use.
+
+From here, we might plot some data!
+
+```{r plot_scherzer}
+scherzer_plot <- scherzer %>% 
+  ggplot(aes(x = release_speed, y = release_spin_rate, color = pitch_type)) +
+  geom_point() +
+  labs(title = 'Max Scherzer: Release Speed vs. Ball Spin Rate', 
+       subtitle = 'Broken down by pitch type', 
+       x = 'Release Speed (MPH)', 
+       y = 'Release Spin Rate (RPM)') +
+  guides(color = guide_legend(title = "Pitch Type")) +
+  scale_color_brewer(palette = "Dark2")
+
+scherzer_plot
+```
+
+## Baseball Reference
+
+Baseball Reference is another source of baseball data. The package `baseballr` allows for aggregate player performance data to be scraped as well as historical standings at any date. There is also a function to calculate "team consistency". Baseball Reference might be used more for getting "typical" statistics such as batting average, ERA, and number of home runs.
+
+```{r load_bref_data, message=F}
+bref_batter <- bref_daily_batter("2021-06-01", "2021-06-30")
+
+head(bref_batter)
+```
+
+```{r plot_bref}
+bref_batter %>% 
+  filter(PA >= 15) %>% 
+  ggplot(aes(x = BA, y = OBP)) +
+  geom_point() +
+  labs(title = 'Batting Average vs. On-Base Percentage for Batters in June 2021', 
+       subtitle = 'Minimum 15 Plate Appearances')
+```
+
+
+# References
+
+* https://baseballsavant.mlb.com/
+* https://razzball.com/mlbamids/
+* https://www.baseball-reference.com/
+* https://billpetti.github.io/baseballr/index.html
+
